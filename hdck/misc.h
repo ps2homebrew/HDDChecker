@@ -1,0 +1,1 @@
+int HdckUnlockHdd(int unit);
