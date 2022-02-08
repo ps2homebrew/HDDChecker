@@ -4,9 +4,11 @@
 #include <kernel.h>
 #include <limits.h>
 #include <libpad.h>
+#include <libpwroff.h>
 #include <fileXio_rpc.h>
 #include <atahw.h>
 #include <hdd-ioctl.h>
+#include <usbhdfsd-common.h>
 #include <sys/fcntl.h>
 
 #include <libgs.h>
@@ -24,6 +26,8 @@
 extern void *_gp;
 
 extern unsigned short int SelectButton, CancelButton;
+extern u8 dev9Loaded;
+extern int InstallLockSema;
 
 int GetBootDeviceID(void)
 {
@@ -90,7 +94,7 @@ int SysBootDeviceInit(void)
 
 	switch(GetBootDeviceID())
 	{
-		case BOOT_DEVICE_HDD:
+		case BOOT_DEVICE_HDD:	//This will only work if the modules are loaded (i.e. at boot).
 			result = SysInitMount();
 			break;
 		default:
@@ -241,6 +245,8 @@ int ScanDisk(int unit)
 
 	int result, InitSemaID;
 
+	WaitSema(InstallLockSema);
+
 	DisplayFlashStatusUpdate(SYS_UI_MSG_PLEASE_WAIT);
 
 	if(fileXioDevctl("hdd0:", HDIOC_GETSECTORERROR, NULL, 0, NULL, 0) == 0)
@@ -264,6 +270,8 @@ int ScanDisk(int unit)
 	} else
 		DisplayErrorMessage(SYS_UI_MSG_HDD_FAULT);
 
+	SignalSema(InstallLockSema);
+
 	return result;
 }
 
@@ -272,6 +280,8 @@ static int HdckDisk(int unit)
 {
 	char device[]="hdck0:";
 	int InitSemaID, result;
+
+	DisplayFlashStatusUpdate(SYS_UI_MSG_PLEASE_WAIT);
 
 	InitSemaID = IopInitStart(IOP_MODSET_HDCK);
 	device[4] = '0' + unit;
@@ -304,6 +314,8 @@ static int FsckDisk(int unit)
 	unsigned int PadStatus, CurrentCPUTicks, PreviousCPUTicks, seconds, TimeElasped, rate, partitions, i;
 	int PercentageComplete;
 	int bfd, fd, result, InitSemaID;
+
+	DisplayFlashStatusUpdate(SYS_UI_MSG_PLEASE_WAIT);
 
 	InitSemaID = IopInitStart(IOP_MODSET_FSCK);
 	bdevice[3] = '0' + unit;
@@ -413,6 +425,8 @@ int ScanDisk(int unit)
 {
 	int result, InitSemaID;
 
+	WaitSema(InstallLockSema);
+
 	DisplayFlashStatusUpdate(SYS_UI_MSG_PLEASE_WAIT);
 
 	ErrorsFound = 0;
@@ -436,6 +450,8 @@ int ScanDisk(int unit)
 
 	SysBootDeviceInit();
 	ReinitializeUI();
+
+	SignalSema(InstallLockSema);
 
 	return result;
 }
@@ -627,6 +643,8 @@ int OptimizeDisk(int unit)
 {
 	int result, InitSemaID;
 
+	WaitSema(InstallLockSema);
+
 	DisplayFlashStatusUpdate(SYS_UI_MSG_PLEASE_WAIT);
 
 	if((result = FsskDisk(unit)) == 0 && !UserAborted)
@@ -648,6 +666,8 @@ int OptimizeDisk(int unit)
 	SysBootDeviceInit();
 	ReinitializeUI();
 
+	SignalSema(InstallLockSema);
+
 	return result;
 }
 
@@ -659,6 +679,8 @@ int SurfScanDisk(int unit)
 	int result, BadSectorHandlingMode, IsRetryCycle, InitSemaID;
 	HdstSectorIOParams_t SectorIOParams;
 	int PercentageComplete;
+
+	WaitSema(InstallLockSema);
 
 	InitProgressScreen(SYS_UI_LBL_SURF_SCANNING_DISK);
 
@@ -766,6 +788,8 @@ SurfaceScan_end:
 	SysBootDeviceInit();
 	ReinitializeUI();
 
+	SignalSema(InstallLockSema);
+
 	return result;
 }
 
@@ -777,6 +801,8 @@ int ZeroFillDisk(int unit)
 	int result, InitSemaID;
 	HdstSectorIOParams_t SectorIOParams;
 	int PercentageComplete;
+
+	WaitSema(InstallLockSema);
 
 	InitProgressScreen(SYS_UI_LBL_ZERO_FILLING_DISK);
 
@@ -834,6 +860,8 @@ int ZeroFillDisk(int unit)
 	SysBootDeviceInit();
 	ReinitializeUI();
 
+	SignalSema(InstallLockSema);
+
 	return result;
 }
 #endif
@@ -867,6 +895,17 @@ int HDDCheckStatus(void)
 
 #ifndef FSCK
 #ifdef LOG_MESSAGES
+static int IsLoggingEnabled(void)
+{
+	switch(GetBootDeviceID())
+	{
+		case BOOT_DEVICE_HDD:
+			return 0;	//Logging to the HDD (while scanning it) is not supported.
+		default:
+			return 1;
+	}
+}
+
 static void WaitLogStart(s32 alarm_id, u16 time, void *common)
 {
 	iWakeupThread((int)common);
@@ -876,6 +915,9 @@ void IopStartLog(const char *log)
 {
 	char blockdev[256];
 	int len;
+
+	if(!IsLoggingEnabled())
+		return;
 
 	getcwd(blockdev, sizeof(blockdev));
 	len = strlen(blockdev);
@@ -895,7 +937,32 @@ void IopStartLog(const char *log)
 
 void IopStopLog(void)
 {
+	if(!IsLoggingEnabled())
+		return;
+
 	fileXioUmount("tty0:");
 }
 #endif
 #endif
+
+void poweroffCallback(void *arg)
+{	//Power button was pressed. If no installation is in progress, begin shutdown of the PS2.
+	if (PollSema(InstallLockSema) == InstallLockSema)
+	{
+		//If dev9.irx was loaded successfully, shut down DEV9.
+		if(dev9Loaded)
+		{
+			fileXioDevctl("pfs:", PDIOC_CLOSEALL, NULL, 0, NULL, 0);
+			while(fileXioDevctl("dev9x:", DDIOC_OFF, NULL, 0, NULL, 0) < 0){};
+		}
+
+#ifndef FSCK
+		// As required by some (typically 2.5") HDDs, issue the SCSI STOP UNIT command to avoid causing an emergency park.
+		fileXioDevctl("mass:", USBMASS_DEVCTL_STOP_ALL, NULL, 0, NULL, 0);
+#endif
+
+		/* Power-off the PlayStation 2 console. */
+		poweroffShutdown();
+	}
+}
+

@@ -122,7 +122,7 @@ static void BreakLongLanguageString(char *str)
 
 		if (wchar != '\n')
 		{
-			width = FontGetGlyphWidth(wchar);
+			width = FontGetGlyphWidth(&UIDrawGlobal, wchar);
 
 			// To wrap long lines, replace the last whitespace with a newline character
 			if(ScreenLineLenPx + width >= LineMaxPx)
@@ -487,7 +487,7 @@ static int LoadFontIntoBuffer(struct UIDrawGlobal *gsGlobal, const char *path)
 		size = ftell(file);
 		rewind(file);
 
-		if((buffer = malloc(size)) != NULL)
+		if((buffer = memalign(64, size)) != NULL)
 		{
 			if(fread(buffer, 1, size, file) == size)
 			{
@@ -566,16 +566,25 @@ static int InitFontWithBuffer(void)
 		if(result != 0)
 			printf("InitFont(%s) error: %d\n", pFontFilePath, result);
 		free(pFontFilePath);
-	} else
-		result = 0;
+	} else {
+		result = FontInitWithBuffer(&UIDrawGlobal, gFontBuffer, gFontBufferSize);
+	}
 
 	return result;
 }
 
 int ReinitializeUI(void)
 {
-	FontDeinit();
-	return((gFontBuffer == NULL) ? InitFont() : InitFontWithBuffer());
+	if(gFontBuffer == NULL)
+	{
+		FontDeinit();
+		return InitFont();
+	}
+	else
+	{
+		//No need to reinitialize font when it is loaded into memory.
+		return 0;
+	}
 }
 
 int InitializeUI(int BufferFont)
@@ -1403,7 +1412,7 @@ int UIExecMenu(struct UIMenu *FirstMenu, short int SelectedItem, struct UIMenu *
 						if(item->enumeration.selectedIndex > 0)
 							item->enumeration.selectedIndex--;
 						else
-							item->enumeration.selectedIndex = item->enumeration.count;
+							item->enumeration.selectedIndex = item->enumeration.count - 1;
 						break;
 				}
 			}

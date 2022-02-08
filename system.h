@@ -48,3 +48,6 @@ int HDDCheckStatus(void);
 
 int SysBootDeviceInit(void);
 int SysCreateThread(void *function, void *stack, unsigned int StackSize, void *arg, int priority);
+
+void poweroffCallback(void *arg);
+

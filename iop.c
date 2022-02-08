@@ -3,6 +3,7 @@
 #include <kernel.h>
 #include <loadfile.h>
 #include <libpad.h>
+#include <libpwroff.h>
 #include <sbv_patches.h>
 #include <sifrpc.h>
 #include <stdio.h>
@@ -12,6 +13,7 @@
 
 #include "main.h"
 #include "iop.h"
+#include "system.h"
 #ifndef FSCK
 #include "hdst.h"
 #endif
@@ -32,6 +34,9 @@ extern unsigned int size_USBD_irx;
 extern unsigned char USBHDFSD_irx[];
 extern unsigned int size_USBHDFSD_irx;
 #endif
+
+extern unsigned char POWEROFF_irx[];
+extern unsigned int size_POWEROFF_irx;
 
 extern unsigned char DEV9_irx[];
 extern unsigned int size_DEV9_irx;
@@ -70,6 +75,8 @@ extern unsigned int size_IOMANX_irx;
 
 extern unsigned char FILEXIO_irx[];
 extern unsigned int size_FILEXIO_irx;
+
+u8 dev9Loaded;
 
 #define SYSTEM_INIT_THREAD_STACK_SIZE	0x1000
 
@@ -121,9 +128,10 @@ static void SystemInitThread(struct SystemInitParams *SystemInitParams)
 
 int IopInitStart(unsigned int flags)
 {
+	int ret, stat;
 	ee_sema_t sema;
 	static struct SystemInitParams InitThreadParams;
-	static unsigned char SysInitThreadStack[SYSTEM_INIT_THREAD_STACK_SIZE] __attribute__((aligned(16)));
+	static u8 SysInitThreadStack[SYSTEM_INIT_THREAD_STACK_SIZE] __attribute__((aligned(16)));
 
 	if(!(flags & IOP_REBOOT))
 	{
@@ -132,7 +140,7 @@ int IopInitStart(unsigned int flags)
 		PadDeinitPads();
 	}
 
-	while(!SifIopReset(NULL, 0)){};
+	while(!SifIopReset("", 0)){};
 
 	//Do something useful while the IOP resets.
 	sema.init_count=0;
@@ -154,7 +162,9 @@ int IopInitStart(unsigned int flags)
 
 	fileXioInit();
 
-	SifExecModuleBuffer(DEV9_irx, size_DEV9_irx, 0, NULL, NULL);
+	SifExecModuleBuffer(POWEROFF_irx, size_POWEROFF_irx, 0, NULL, NULL);
+	ret = SifExecModuleBuffer(DEV9_irx, size_DEV9_irx, 0, NULL, &stat);
+	dev9Loaded = (ret >= 0 && stat == 0);	//dev9.irx must have loaded successfully and returned RESIDENT END.
 
 	SifExecModuleBuffer(SIO2MAN_irx, size_SIO2MAN_irx, 0, NULL, NULL);
 	SifExecModuleBuffer(PADMAN_irx, size_PADMAN_irx, 0, NULL, NULL);
@@ -167,6 +177,8 @@ int IopInitStart(unsigned int flags)
 
 	SysCreateThread(SystemInitThread, SysInitThreadStack, SYSTEM_INIT_THREAD_STACK_SIZE, &InitThreadParams, 0x2);
 
+	poweroffInit();
+	poweroffSetCallback(&poweroffCallback, NULL);
 	PadInitPads();
 
 	return InitThreadParams.InitCompleteSema;

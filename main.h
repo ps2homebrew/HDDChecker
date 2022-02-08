@@ -6,4 +6,4 @@
 	#define DEBUG_PRINTF(args...)
 #endif
 
-#define HDDC_VERSION	"0.961"
+#define HDDC_VERSION	"0.964"

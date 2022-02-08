@@ -15,6 +15,7 @@
 #include "pad.h"
 
 int VBlankStartSema;
+int InstallLockSema;
 
 static int VBlankStartHandler(int cause)
 {
@@ -29,6 +30,7 @@ static void DeinitServices(void)
 	DisableIntc(kINTC_VBLANK_START);
 	RemoveIntcHandler(kINTC_VBLANK_START, 0);
 	DeleteSema(VBlankStartSema);
+	DeleteSema(InstallLockSema);
 
 	IopDeinit();
 }
@@ -40,8 +42,9 @@ int main(int argc, char *argv[])
 	ee_sema_t ThreadSema;
 	int result, InitSemaID, BootDevice;
 
-	//chdir("mass:/HDDChecker");
-	//chdir("hdd0:__system:pfs:/fsck/");
+	chdir("mass:/HDDChecker/");
+	//chdir("hdd0:__system:pfs:/HDDChecker/");
+	//chdir("hdd0:__system:pfs:/fsck/");	//For testing the standalone FSCK tool.
 	if((BootDevice = GetBootDeviceID()) == BOOT_DEVICE_UNKNOWN)
 		Exit(ENODEV);
 
@@ -55,6 +58,11 @@ int main(int argc, char *argv[])
 	ThreadSema.max_count=1;
 	ThreadSema.attr=ThreadSema.option=0;
 	VBlankStartSema=CreateSema(&ThreadSema);
+
+	ThreadSema.init_count=1;
+	ThreadSema.max_count=1;
+	ThreadSema.attr=ThreadSema.option=0;
+	InstallLockSema=CreateSema(&ThreadSema);
 
 	AddIntcHandler(kINTC_VBLANK_START, &VBlankStartHandler, 0);
 	EnableIntc(kINTC_VBLANK_START);

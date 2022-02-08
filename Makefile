@@ -6,13 +6,13 @@ LOG_MESSAGES ?= 1
 
 EE_HDDCHECKER_BIN = HDDChecker.elf
 EE_FSCK_BIN = fsck.elf
-EE_IOP_OBJS = SIO2MAN_irx.o PADMAN_irx.o DEV9_irx.o ATAD_irx.o IOMANX_irx.o FILEXIO_irx.o HDD_irx.o PFS_irx.o FSCK_irx.o
+EE_IOP_OBJS = SIO2MAN_irx.o PADMAN_irx.o POWEROFF_irx.o DEV9_irx.o ATAD_irx.o IOMANX_irx.o FILEXIO_irx.o HDD_irx.o PFS_irx.o FSCK_irx.o
 EE_RES_OBJS = background.o buttons.o
 EE_OBJS = main.o iop.o pad.o UI.o menu.o system.o graphics.o font.o $(EE_IOP_OBJS) $(EE_RES_OBJS)
 
 EE_INCS := -I$(PS2SDK)/ports/include -I$(PS2SDK)/ee/include -I$(PS2SDK)/common/include -I.
 EE_LDFLAGS := -L$(PS2SDK)/ports/lib -L$(PS2SDK)/ee/lib -s
-EE_LIBS := -lpng -lz -lm -lfreetype -lhdd -lpatches -lfileXio -lpadx -lgs -lc -lkernel
+EE_LIBS := -lpng -lz -lm -lfreetype -lhdd -lpatches -lpoweroff -lfileXio -lpadx -lgs -lc -lkernel
 EE_GPVAL = -G8192
 EE_CFLAGS += -mgpopt $(EE_GPVAL)
 
@@ -85,6 +85,9 @@ IOMANX_irx.c: $(PS2SDK)/iop/irx/iomanX.irx
 
 FILEXIO_irx.c: $(PS2SDK)/iop/irx/fileXio.irx
 	bin2c $(PS2SDK)/iop/irx/fileXio.irx FILEXIO_irx.c FILEXIO_irx
+
+POWEROFF_irx.c: $(PS2SDK)/iop/irx/poweroff.irx
+	bin2c $(PS2SDK)/iop/irx/poweroff.irx POWEROFF_irx.c POWEROFF_irx
 
 DEV9_irx.c: $(PS2SDK)/iop/irx/ps2dev9.irx
 	bin2c $(PS2SDK)/iop/irx/ps2dev9.irx DEV9_irx.c DEV9_irx
