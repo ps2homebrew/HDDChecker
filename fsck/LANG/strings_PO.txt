@@ -1,0 +1,6 @@
+nenhum drive de Disco-R�gido foi detectado..
+The HardDisk Drive (HDD) unit is not formatted.
+Por favor, aguardar...
+Houve um problema quando acessava o disco.\nA opera��o n�o podera ser conclu�da.
+Escaneamento completo.
+O disco cont�m dados corrompidos e precisa ser verificado.\nDados corrompidos ser�o apagados.

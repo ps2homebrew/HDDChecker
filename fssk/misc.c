@@ -11,20 +11,20 @@
 
 int fsskCreateEventFlag(void)
 {
-	iop_event_t EventFlagData;
+    iop_event_t EventFlagData;
 
-	EventFlagData.attr = EA_MULTI;
-	EventFlagData.bits = 0;
-	return CreateEventFlag(&EventFlagData);
+    EventFlagData.attr = EA_MULTI;
+    EventFlagData.bits = 0;
+    return CreateEventFlag(&EventFlagData);
 }
 
 int fsskCreateThread(void (*function)(void *arg), int StackSize)
 {
-	iop_thread_t ThreadData;
+    iop_thread_t ThreadData;
 
-	ThreadData.attr = TH_C;
-	ThreadData.thread = function;
-	ThreadData.priority = 0x7b;
-	ThreadData.stacksize = StackSize;
-	return CreateThread(&ThreadData);
+    ThreadData.attr      = TH_C;
+    ThreadData.thread    = function;
+    ThreadData.priority  = 0x7b;
+    ThreadData.stacksize = StackSize;
+    return CreateThread(&ThreadData);
 }

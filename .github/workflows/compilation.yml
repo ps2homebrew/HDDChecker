@@ -1,0 +1,75 @@
+name: CI-compile
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ps2dev/ps2dev:v1.0
+    # instead of "ps2dev/ps2dev:latest" you can use different tags, for example for old projects you can use "ps2dev/ps2dev:v1.0"
+    steps:
+      - name: Install dependencies
+        run: |
+          apk add build-base git zip
+
+      - uses: actions/checkout@v2
+      - run: |
+          git fetch --prune --unshallow
+
+      - name: Get short SHA and repository name
+        id: slug
+        run: |
+          echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
+          echo "::set-output name=REPOSITORY_NAME::$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//")"
+
+      - name: Compile HDDChecker
+        run: |
+          make
+          zip HDDChecker-${{ steps.slug.outputs.sha8 }}.zip HDDChecker.elf lang/*
+
+      - name: Upload HDDChecker
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: HDDChecker-${{ steps.slug.outputs.sha8 }}.zip
+          path: HDDChecker-${{ steps.slug.outputs.sha8 }}.zip
+
+      - name: Compile FSCK-tool
+        run: |
+          make clean
+          make fsck-tool
+          cp lang/*.ttf fsck/LANG/
+          cp lang/fonts.txt fsck/LANG/
+          cd fsck
+          zip FSCK-tool-${{ steps.slug.outputs.sha8 }}.zip fsck.elf LANG/
+          mv FSCK-tool-${{ steps.slug.outputs.sha8 }}.zip ../
+
+      - name: Upload FSCK-tool
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: FSCK-tool-${{ steps.slug.outputs.sha8 }}.zip
+          path: FSCK-tool-${{ steps.slug.outputs.sha8 }}.zip
+
+      - name: Create pre-release
+        if: github.ref == 'refs/heads/main'
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: true
+          automatic_release_tag: "latest"
+          title: "Development build"
+          files: |
+            *.zip
+
+      - name: Create Tagged Release Draft
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          draft: true
+          files: |
+            *.zip

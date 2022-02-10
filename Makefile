@@ -5,7 +5,7 @@ FSCK ?= 0
 LOG_MESSAGES ?= 1
 
 EE_HDDCHECKER_BIN = HDDChecker.elf
-EE_FSCK_BIN = fsck.elf
+EE_FSCK_BIN = fsck/fsck.elf
 EE_IOP_OBJS = SIO2MAN_irx.o PADMAN_irx.o POWEROFF_irx.o DEV9_irx.o ATAD_irx.o IOMANX_irx.o FILEXIO_irx.o HDD_irx.o PFS_irx.o FSCK_irx.o
 EE_RES_OBJS = background.o buttons.o
 EE_OBJS = main.o iop.o pad.o UI.o menu.o system.o graphics.o font.o $(EE_IOP_OBJS) $(EE_RES_OBJS)
@@ -29,6 +29,10 @@ endif
 ifeq ($(LOG_MESSAGES),1)
 	EE_CFLAGS += -DLOG_MESSAGES=1
 	EE_IOP_OBJS += HDLOG_irx.o
+endif
+
+ifdef HDDC_VERSION
+EE_CFLAGS += -DHDDC_VERSION=$(HDDC_VERSION)
 endif
 
 all:

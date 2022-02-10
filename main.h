@@ -1,9 +1,9 @@
 //#define DEBUG_TTY_FEEDBACK /* Comment out to disable debugging messages */
 
 #ifdef DEBUG_TTY_FEEDBACK
-	#define DEBUG_PRINTF(args...) printf(args)
+#define DEBUG_PRINTF(args...) printf(args)
 #else
-	#define DEBUG_PRINTF(args...)
+#define DEBUG_PRINTF(args...)
 #endif
 
-#define HDDC_VERSION	"0.964"
+#define HDDC_VERSION "0.964"

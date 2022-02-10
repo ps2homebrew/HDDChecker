@@ -1,0 +1,46 @@
+Changelog
+Update 2019/04/13: v0.964 re-released!
+
+Update 2019/01/14: v0.964 re-released!
+
+Update 2019/01/11: v0.964 released!
+
+Update 2018/12/08: v0.963 released!
+
+Update 2018/10/27: v0.962 re-released!
+
+Update 2018/10/21: v0.962 released!
+
+Update 2018/06/20: v0.961 re-released!
+
+Update 2018/06/19: v0.961 re-released!
+
+Update 2018/06/18: v0.961 released!
+
+Update 2018/06/12: v0.96 released!
+
+Update 2018/02/04: v0.95 released!
+
+Update 2017/02/28: v0.942 released!
+
+Update 2016/12/16: v0.941 released!
+
+Update 2016/09/16: v0.94 released!
+
+Update 2016/08/09: v0.932 released!
+
+Update 2016/06/10: v0.931 released!
+
+Update 2016/01/09: v0.93 re-released!
+
+Update 2016/01/06: v0.93 re-released!
+
+Update 2016/01/04: v0.93 released!
+
+Update 2014/06/26: v0.92 re-released!
+
+Update 2014/06/23: v0.92 released!
+
+Update 2013/09/30: Bug report.
+
+Update 2013/08/06: Initial public release.
