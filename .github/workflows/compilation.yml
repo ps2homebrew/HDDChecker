@@ -41,7 +41,7 @@ jobs:
           make clean
           make fsck-tool
           cp lang/*.ttf fsck/LANG/
-          cp lang/fonts.txt fsck/LANG/
+          cp lang/*.txt fsck/LANG/
           cd fsck
           zip FSCK-tool-${{ steps.slug.outputs.sha8 }}.zip fsck.elf LANG/
           mv FSCK-tool-${{ steps.slug.outputs.sha8 }}.zip ../
