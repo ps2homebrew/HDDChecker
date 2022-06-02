@@ -14,9 +14,7 @@ jobs:
         run: |
           apk add build-base git zip
 
-      - uses: actions/checkout@v2
-      - run: |
-          git fetch --prune --unshallow
+      - uses: actions/checkout@v3
 
       - name: Get short SHA and repository name
         id: slug
@@ -48,7 +46,7 @@ jobs:
 
       - name: Upload FSCK-tool
         if: ${{ success() }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: FSCK-tool-${{ steps.slug.outputs.sha8 }}.zip
           path: FSCK-tool-${{ steps.slug.outputs.sha8 }}.zip
